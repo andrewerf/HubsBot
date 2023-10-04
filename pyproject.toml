@@ -1,0 +1,21 @@
+[project]
+name = "HubsBot"
+description = "Mozilla Hubs client for AI-powered bots creation (support voice chatting)"
+requires-python = "==3.10"
+license = "AGPL-3.0-or-later"
+keywords = ["mozilla-hubs"]
+authors = [
+    { name = "Andrew Aralov", email = "andrew-aralov@yandex.ru" },
+    { name = "Iskander Gafarov" }
+]
+dependencies = [
+    "git+https://github.com/andrewerf/hubsclient.git",
+    "pymediasoup",
+    "Cryptography<=38.0.0"
+]
+
+[options]
+package_dir = "src"
+
+[options.packages.find]
+where = "src"
