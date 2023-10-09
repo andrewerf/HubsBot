@@ -13,7 +13,7 @@ from pymediasoup.producer import Producer
 from pymediasoup.sctp_parameters import SctpStreamParameters
 from pymediasoup.transport import Transport
 
-from hubsbot.consumer import ConsumerFactory, VoiceConsumer
+from hubsbot.consumer import ConsumerFactory, VoiceConsumer, TextConsumer, Message
 from hubsbot.peer import Peer
 
 
@@ -67,6 +67,7 @@ class Bot:
 
         # Filled in ``_on_mediasoup_new_consumer``
         self.consumers: List[Tuple[VoiceConsumer | None, Consumer | DataConsumer]] = []
+        self.text_consumers: Dict[str, TextConsumer] = {}
 
         # Filled in ``_hubs_receive``
         self.peers: Dict[str, Peer] = {}
@@ -155,7 +156,12 @@ class Bot:
             k = data['from_session_id']
             self.peers[k].update_from_naf(data['data'])
 
+        async def message(data: dict):
+            body = data['body']
+            await self.text_consumers[data['session_id']].on_message(Message(body=body))
+
         while True:
+            await asyncio.sleep(0.1)
             msg = await self.hubs_client.get_message()
             msg = json.loads(msg.to_json())
             if msg[3] == 'presence_diff':
@@ -164,6 +170,8 @@ class Bot:
                 presense_state(msg[4])
             elif msg[3] == 'naf':
                 naf(msg[4])
+            elif msg[3] == 'message':
+                await message(msg[4])
 
     # ---
     # The following functions are mediasoup protocol's internals
@@ -339,7 +347,6 @@ class Bot:
         """
         while True:
             msg = await self.voice_socket.recv()
-            print(msg)
             msg = json.loads(msg)
             if msg.get('response'):
                 self.pending_mediasoup_requests[msg['id']].set_result(msg)
@@ -376,6 +383,7 @@ class Bot:
         mediasoup_consumer = await self.recv_transport.consume(id=id, producerId=producer_id, kind=kind, rtpParameters=rtp_parameters)
         consumer = self.consumer_factory.create_voice_consumer(self.peers[peer_id], mediasoup_consumer.track)
         self.consumers.append((consumer, mediasoup_consumer))
+        self.text_consumers[peer_id] = self.consumer_factory.create_text_consumer(self.peers[peer_id])
         asyncio.create_task(consumer.start())
 
     async def _on_mediasoup_new_data_consumer(self, id: str, data_producer_id: str, sctp_stream_parameters: dict,
