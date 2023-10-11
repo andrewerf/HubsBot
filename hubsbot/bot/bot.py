@@ -126,7 +126,7 @@ class Bot:
         # voice peer id corresponding to the Hubs peer id
         self.voice_peer_id = self.hubs_client.sid
 
-        self.voice_socket = await websockets.connect(f'wss://{self.voice_host}/?roomId={self.room_id}&peerId={self.voice_peer_id}', subprotocols=['protoo'])
+        self.voice_socket = await websockets.connect(f'wss://{self.voice_host}/?roomId={self.room_id}&peerId={self.voice_peer_id}', subprotocols=['protoo'], max_queue=2**10)
         t2 = asyncio.create_task(self._mediasoup_receive())
         await self._load_mediasoup()
         self.recv_transport = await self._create_mediasoup_recv_transport()
