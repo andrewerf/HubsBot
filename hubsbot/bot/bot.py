@@ -101,6 +101,7 @@ class Bot:
 
         await self.audio_producer.close()
         await self.video_producer.close()
+        await self.data_producer.close()
 
         for task in self.pending_mediasoup_requests.values():
             task.cancel()
@@ -345,6 +346,8 @@ class Bot:
         # produce
         self.video_producer = await self.send_transport.produce(track=self.video_track, stopTracks=False, appData={})
         self.audio_producer = await self.send_transport.produce(track=self.audio_track, stopTracks=False, appData={})
+        self.data_producer = await self.send_transport.produceData(ordered=False, maxPacketLifeTime=5555,
+            label='chat', protocol='', appData={'info': "my-chat-DataProducer"})
 
     async def _mediasoup_receive(self):
         """
