@@ -6,6 +6,7 @@ from urllib.parse import urlparse # for ``from_sharing_link``
 from hubsclient import HubsClient
 from aiortc.mediastreams import VideoStreamTrack, MediaStreamTrack
 import websockets
+import logging
 from pymediasoup import Device, AiortcHandler
 from pymediasoup.consumer import Consumer
 from pymediasoup.data_consumer import DataConsumer
@@ -138,7 +139,6 @@ class Bot:
         Reads everything from hubsclient and updates ``peers`` dict.
         """
         def peer_from_metas(id, metas) -> Peer:
-            print(f'Adding peer {id}')
             return Peer(id=id, display_name=metas[0]['profile']['displayName'], position=[0.0, 0.0, 0.0])
 
         def presence_diff(data: dict):
@@ -179,11 +179,17 @@ class Bot:
     async def _send_mediasoup_request(self, req: dict):
         # create an empty future, that would be set when corresponding message is received
         # in _on_mediasoup_message_received
+        logging.debug(f'Sending request: {req}')
         self.pending_mediasoup_requests[req['id']] = asyncio.get_running_loop().create_future()
         await self.voice_socket.send(json.dumps(req))
 
-    async def _wait_for_mediasoup_response(self, id: int, timeout=20):
-        return await asyncio.wait_for(self.pending_mediasoup_requests[id], timeout=timeout)
+    async def _wait_for_mediasoup_response(self, id: int, timeout=30):
+        try:
+            resp = await asyncio.wait_for(self.pending_mediasoup_requests[id], timeout=timeout)
+            logging.debug(f'Received response: {resp}')
+            return resp
+        except asyncio.TimeoutError as err:
+            raise TimeoutError(f'Timeout error waiting for the request id {id}: {err}')
 
     async def _load_mediasoup(self):
         req_id = generateRandomNumber()
@@ -348,6 +354,7 @@ class Bot:
         while True:
             msg = await self.voice_socket.recv()
             msg = json.loads(msg)
+            logging.debug(f'Received response: {msg}')
             if msg.get('response'):
                 self.pending_mediasoup_requests[msg['id']].set_result(msg)
             elif msg.get('request'):
@@ -373,7 +380,7 @@ class Bot:
                     response = {'response': True, 'id': msg['data']['id'], 'ok': True, 'data': {}}
                     await self.voice_socket.send(json.dumps(response))
             elif msg.get('notification'):
-                print(msg)
+                logging.debug(f'Notification received: {msg}')
 
     async def _on_mediasoup_new_consumer(self, id: str, producer_id: str, peer_id: str, kind: str, rtp_parameters: dict):
         """
@@ -402,4 +409,4 @@ class Bot:
 
         @dataConsumer.on('message')
         def on_message(message):
-            print(f'DataChannel {label}-{protocol}: {message}')
+            logging.debug(f'DataChannel {label}-{protocol}: {message}')
