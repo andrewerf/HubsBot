@@ -355,41 +355,46 @@ class Bot:
         Calls _on_new_consumer if  'method': 'newPeer' is received, and manages pending_mediasoup_requests.
         """
         while True:
-            msg = await self.voice_socket.recv()
-            msg = json.loads(msg)
-            logging.debug(f'Received response: {msg}')
-            if msg.get('response'):
-                self.pending_mediasoup_requests[msg['id']].set_result(msg)
-            elif msg.get('request'):
-                if msg['method'] == 'newConsumer':
-                    await self._on_mediasoup_new_consumer(
-                        id=msg['data']['id'],
-                        producer_id=msg['data']['producerId'],
-                        peer_id=msg['data']['peerId'],
-                        kind=msg['data']['kind'],
-                        rtp_parameters=msg['data']['rtpParameters']
-                    )
-                    response = {'response': True, 'id': msg['id'], 'ok': True, 'data': {}}
-                    await self.voice_socket.send(json.dumps(response))
-                elif msg.get('method') == 'newDataConsumer':
-                    await self._on_mediasoup_new_data_consumer(
-                        id=msg['data']['id'],
-                        data_producer_id=msg['data']['dataProducerId'],
-                        label=msg['data']['label'],
-                        protocol=msg['data']['protocol'],
-                        sctp_stream_parameters=msg['data']['sctpStreamParameters'],
-                        appData={}
-                    )
-                    response = {'response': True, 'id': msg['data']['id'], 'ok': True, 'data': {}}
-                    await self.voice_socket.send(json.dumps(response))
-            elif msg.get('notification'):
-                logging.debug(f'Notification received: {msg}')
+            try:
+                msg = await self.voice_socket.recv()
+                msg = json.loads(msg)
+                logging.debug(f'Received response: {msg}')
+                if msg.get('response'):
+                    self.pending_mediasoup_requests[msg['id']].set_result(msg)
+                elif msg.get('request'):
+                    if msg['method'] == 'newConsumer' and msg['data']['peerId'] != self.voice_peer_id:
+                        await self._on_mediasoup_new_consumer(
+                            id=msg['data']['id'],
+                            producer_id=msg['data']['producerId'],
+                            peer_id=msg['data']['peerId'],
+                            kind=msg['data']['kind'],
+                            rtp_parameters=msg['data']['rtpParameters']
+                        )
+                        response = {'response': True, 'id': msg['id'], 'ok': True, 'data': {}}
+                        await self.voice_socket.send(json.dumps(response))
+                    elif msg.get('method') == 'newDataConsumer':
+                        await self._on_mediasoup_new_data_consumer(
+                            id=msg['data']['id'],
+                            data_producer_id=msg['data']['dataProducerId'],
+                            label=msg['data']['label'],
+                            protocol=msg['data']['protocol'],
+                            sctp_stream_parameters=msg['data']['sctpStreamParameters'],
+                            appData={}
+                        )
+                        response = {'response': True, 'id': msg['data']['id'], 'ok': True, 'data': {}}
+                        await self.voice_socket.send(json.dumps(response))
+                elif msg.get('notification'):
+                    logging.debug(f'Notification received: {msg}')
+            except Exception as err:
+                logging.error(f'Caught exception in the mediasoup messages receiver loop: {err}')
 
     async def _on_mediasoup_new_consumer(self, id: str, producer_id: str, peer_id: str, kind: str, rtp_parameters: dict):
         """
         Called when a new remote voice-producer is joined the room.
         Sets up the consumer for this producer
         """
+        if peer_id not in self.peers.keys():
+            return
         mediasoup_consumer = await self.recv_transport.consume(id=id, producerId=producer_id, kind=kind, rtpParameters=rtp_parameters)
         consumer = self.consumer_factory.create_voice_consumer(self.peers[peer_id], mediasoup_consumer.track)
         self.consumers.append((consumer, mediasoup_consumer))
