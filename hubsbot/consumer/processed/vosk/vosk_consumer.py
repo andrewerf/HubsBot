@@ -37,6 +37,8 @@ class VoskVoiceConsumer(PhrasesVoiceConsumer):
             segment = segment + AudioSegment.from_raw(s, sample_width=frame.format.bytes,
                                                       channels=len(frame.layout.channels), frame_rate=frame.sample_rate)
 
+        silence = AudioSegment.silent(1000, self.framerate)
+        segment = silence + segment + silence
         segment = segment.set_frame_rate(self.framerate)
         segment = segment.set_channels(1)
         self.rec.AcceptWaveform(segment.raw_data)
