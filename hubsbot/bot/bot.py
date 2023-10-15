@@ -159,7 +159,9 @@ class Bot:
 
         async def message(data: dict):
             body = data['body']
-            await self.text_consumers[data['session_id']].on_message(Message(body=body))
+            sid = data['session_id']
+            if sid != self.hubs_client.sid and sid in self.text_consumers.keys():
+                await self.text_consumers[sid].on_message(Message(body=body))
 
         while True:
             await asyncio.sleep(0.1)
