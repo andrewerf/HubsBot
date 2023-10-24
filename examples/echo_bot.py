@@ -26,8 +26,8 @@ class VoiceConsumer(VoskVoiceConsumer):
         self.peer = peer
         self.bot = bot
 
-    async def on_phrase_text(self, text: str):
-        await self.bot.hubs_client.send_chat(f'Transcribed from {self.peer.display_name}: {text}')
+    async def on_message(self, msg: Message):
+        await self.bot.hubs_client.send_chat(f'Transcribed from {self.peer.display_name}: {msg.body}')
 
 
 # Override consumer factory

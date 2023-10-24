@@ -9,6 +9,7 @@ from aioprocessing import AioProcess, AioPipe
 
 from vosk import Model, KaldiRecognizer
 
+from hubsbot.consumer import Message
 from hubsbot.consumer.processed.phrases_consumer import PhrasesVoiceConsumer
 
 
@@ -47,7 +48,7 @@ class VoskVoiceConsumer(PhrasesVoiceConsumer):
         self.vosk_process.start()
         self.conn = conn2
 
-    async def on_phrase_text(self, text: str):
+    async def on_message(self, msg: Message):
         pass
 
     async def on_phrase(self, frames: List[AudioFrame]):
@@ -65,7 +66,7 @@ class VoskVoiceConsumer(PhrasesVoiceConsumer):
         await self.conn.coro_send(segment.raw_data)
 
         res = (await self.conn.coro_recv())['text']
-        await self.on_phrase_text(res)
+        await self.on_message(Message(body=res))
 
     async def stop(self):
         await self.conn.coro_send(False)
