@@ -133,7 +133,9 @@ class Bot:
         self.send_transport = await self._create_mediasoup_send_transport()
         await self._start_mediasoup_producing()
 
-        await asyncio.gather(t1, t2)
+        t3 = asyncio.create_task(self._send_naf())
+
+        return await asyncio.gather(t1, t2, t3)
 
     async def _hubs_receive(self):
         """
@@ -148,10 +150,13 @@ class Bot:
 
             for k, v in data['joins'].items():
                 self.peers[k] = peer_from_metas(k, v['metas'])
+                
+            self.hubs_client.avatar.is_first_sync = True
 
         def presense_state(data: dict):
             for k, v in data.items():
                 self.peers[k] = peer_from_metas(k, v['metas'])
+            self.hubs_client.avatar.is_first_sync = True
 
         def naf(data: dict):
             k = data['from_session_id']
@@ -175,6 +180,11 @@ class Bot:
                 naf(msg[4])
             elif msg[3] == 'message':
                 await message(msg[4])
+
+    async def _send_naf(self):
+        while True:
+            await self.hubs_client.sync()
+            await asyncio.sleep(1)
 
     # ---
     # The following functions are mediasoup protocol's internals
