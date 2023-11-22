@@ -3,7 +3,6 @@ import json
 from random import random
 from typing import Dict, List, Tuple
 from urllib.parse import urlparse # for ``from_sharing_link``
-from hubsclient import HubsClient
 from aiortc.mediastreams import VideoStreamTrack, MediaStreamTrack
 import websockets
 import logging
@@ -14,6 +13,7 @@ from pymediasoup.producer import Producer
 from pymediasoup.sctp_parameters import SctpStreamParameters
 from pymediasoup.transport import Transport
 
+from hubsbot.hubsclient import HubsClient
 from hubsbot.consumer import ConsumerFactory, VoiceConsumer, TextConsumer, Message
 from hubsbot.peer import Peer
 

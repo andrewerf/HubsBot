@@ -9,7 +9,6 @@ authors = [
     { name = "Iskander Gafarov" }
 ]
 dependencies = [
-    "git+https://github.com/andrewerf/hubsclient.git",
     "pymediasoup",
     "Cryptography<=38.0.0"
 ]
