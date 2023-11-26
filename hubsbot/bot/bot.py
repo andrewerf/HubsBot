@@ -145,11 +145,14 @@ class Bot:
             return Peer(id=id, display_name=metas[0]['profile']['displayName'], position=[0.0, 0.0, 0.0])
 
         def presence_diff(data: dict):
+            # Don't call me insane. They _really_ send presence_diff with similar keys in 'leaves' and 'joins'
             for k in data['leaves'].keys():
-                self.peers.pop(k)
+                if k not in data['joins']:
+                    self.peers.pop(k)
 
             for k, v in data['joins'].items():
-                self.peers[k] = peer_from_metas(k, v['metas'])
+                if k not in data['leaves']:
+                    self.peers[k] = peer_from_metas(k, v['metas'])
                 
             self.hubs_client.avatar.is_first_sync = True
 
@@ -161,6 +164,10 @@ class Bot:
         def naf(data: dict):
             k = data['from_session_id']
             self.peers[k].update_from_naf(data['data'])
+
+        def nafr_um(data: dict):
+            k = data['from_session_id']
+            self.peers[k].update_from_nafr_um(data['data'])
 
         async def message(data: dict):
             body = data['body']
@@ -178,6 +185,12 @@ class Bot:
                 presense_state(msg[4])
             elif msg[3] == 'naf':
                 naf(msg[4])
+            elif msg[3] == 'nafr':
+                naf_str = msg[4]['naf']
+                naf_json = json.loads(naf_str)
+                naf_json['from_session_id'] = msg[4]['from_session_id']
+                if naf_json['dataType'] == 'um':
+                    nafr_um(naf_json)
             elif msg[3] == 'message':
                 await message(msg[4])
 
