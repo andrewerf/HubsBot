@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from math import atan2
-from typing import List
+from typing import List, Callable
 from asyncio import Queue
 
 import numpy as np
@@ -24,8 +24,7 @@ class Animation:
         time: float | None = None # time of transition from previous node to current one
         speed: float | None = 0.2 # speed of transition from previous node to current one.
         # if both time and speed are given, speed takes precedence. If neither are given, animation is instant.
-
-        on_complete = None # coroutine to be invoked when animation has been completed
+        on_complete: Callable = None # coroutine to be invoked when animation has been completed
 
     nodes: List[Node] # list of nodes to visit
 
@@ -82,12 +81,41 @@ class AnimatedBot(Bot):
 
 class ConferenceBot(AnimatedBot):
 
-    async def on_room_entered(self):
-        pass
+    async def on_main_room_entered(self):
+        """
+        Called after the first animation node is passed
+        """
+        tables = np.array([
+            [1.98746014, 0.19, -15.05175839],
+            [-1.92125374, 0.19, -15.1702039]
+        ])
+
+        while len(self.peers.items()) == 1:
+            await asyncio.sleep(1)
+
+        # print(self.hubs_client.sid)
+        # print(list(map(lambda p: p.id, self.peers.values())))
+
+        other_peers_centroid = \
+            np.mean(list(map( lambda p: p.matrix[:3, -1],
+                filter(
+                    lambda p: p.id != self.hubs_client.sid,
+                    self.peers.values() ) )), axis=0)
+
+        if len(self.peers.items()) == 2:
+            # select the table closest to user
+            dist_to_tables = ( tables - other_peers_centroid )**2
+            dist_to_tables = np.sum(dist_to_tables, 1)
+            closest_table = tables[np.argmin(dist_to_tables)]
+            await self.animations.put(Animation([Animation.Node(pos=closest_table, r=0.001)]))
+
+        await self.hubs_client.send_chat('Всем привет!')
+
 
     async def join(self):
         t = super().join()
-        await self.animations.put(Animation([Animation.Node(pos=np.array([0.04097, 0.1741, -10.9033]))]))
+        await self.animations.put(Animation([Animation.Node(pos=np.array([0.04097, 0.1741, -10.9033]), on_complete=self.on_main_room_entered)]))
+        return await t
 
 
 
@@ -111,6 +139,8 @@ class TextConsumer(BaseTextConsumer):
         print(f'Received msg: {msg}')
         if msg.body == 'pos':
             await self.bot.hubs_client.send_chat(str(self.bot.hubs_client.avatar.position))
+        if msg.body == 'mypos':
+            await self.bot.hubs_client.send_chat(str(self.peer.matrix[:3, -1]))
         await self.bot.animations.put(Animation(nodes=[Animation.Node(pos=self.peer.matrix[:3, -1], r=1)]))
         pass
 
@@ -131,15 +161,15 @@ class ConsumerFactory(BaseConsumerFactory):
 
 
 def main():
-    bot = AnimatedBot(
+    bot = ConferenceBot(
         host='9de36d10e9.us2.myhubs.net',
         room_id='YuRGAyX',
         avatar_id='basebot',
         display_name='Conference bot',
         consumer_factory=None,
         voice_track=AudioStreamTrack())
-    bot.consumer_factory = ConsumerFactory(bot)
 
+    bot.consumer_factory = ConsumerFactory(bot)
     asyncio.get_event_loop().run_until_complete(bot.join())
 
 if __name__ == '__main__':
