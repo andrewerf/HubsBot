@@ -3,6 +3,8 @@ import json
 from random import random
 from typing import Dict, List, Tuple
 from urllib.parse import urlparse # for ``from_sharing_link``
+
+import numpy as np
 from aiortc.mediastreams import VideoStreamTrack, MediaStreamTrack
 import websockets
 import logging
@@ -142,7 +144,7 @@ class Bot:
         Reads everything from hubsclient and updates ``peers`` dict.
         """
         def peer_from_metas(id, metas) -> Peer:
-            return Peer(id=id, display_name=metas[0]['profile']['displayName'], position=[0.0, 0.0, 0.0])
+            return Peer(id=id, display_name=metas[0]['profile']['displayName'], matrix=np.ones((4, 4)), head_matrix=np.ones((4, 4)))
 
         def presence_diff(data: dict):
             # Don't call me insane. They _really_ send presence_diff with similar keys in 'leaves' and 'joins'

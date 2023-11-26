@@ -1,5 +1,33 @@
 from dataclasses import dataclass
-from typing import List
+import numpy as np
+from transforms3d.affines import decompose44, compose
+
+
+def _get_updated_matrix(matrix: np.ndarray, components: dict, keys=('0', '1', '2')):
+    """
+    Given initial matrix, updates it from components.
+    :param matrix: The matrix
+    :param components: The dictionary of components
+    :param keys: Tuple of exactly three keys, for translation, rotation and scale
+    :return:
+    """
+    k1, k2, k3 = keys
+
+    T, R, Z, S = decompose44(matrix)
+    if k1 in components and components[k1] is not None:
+        position = components[k1]
+        T = np.array([position['x'], position['y'], position['z']])
+
+    if k2 in components and components[k2] is not None:
+        # Hubs use weird frame for the euler angles, which is not supported by transforms3d
+        # Of course it is still possible to find proper formulas, but I'll just leave it as a TODO.
+        pass
+
+    if k3 in components and components[k3] is not None:
+        scale = components[k3]
+        Z = np.array([scale['x'], scale['y'], scale['z']])
+
+    return compose(T, R, Z, S)
 
 
 @dataclass
@@ -9,7 +37,8 @@ class Peer:
     """
     id: str # id of the peer
     display_name: str # display name of the peer
-    position: List[float] # Vector3f -- position on the scene
+    matrix: np.ndarray # 4x4 affine object matrix. Position vector is matrix[:, :-1].
+    head_matrix: np.ndarray # 4x4 affine matrix. Represents "head" transfomation of the object. It is updated with nafr.
     # TODO: avatar description (head, hands position, skin, mesh, etc...) to be here
 
     def update_from_naf(self, data: dict):
@@ -18,11 +47,8 @@ class Peer:
         (idk what this abbreviation means, there is no docs on the Hubs protocol).
         """
         components = data['components']
-        if '0' in components:
-            position = components['0']
-            self.position[0] = position['x']
-            self.position[1] = position['y']
-            self.position[2] = position['z']
+        self.matrix = _get_updated_matrix(self.matrix, components, ('0', '1', '2'))
+        self.head_matrix = _get_updated_matrix(self.head_matrix, components, ('5', '6', '9999'))
 
     def update_from_nafr_um(self, data: dict):
         """
