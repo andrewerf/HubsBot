@@ -1,8 +1,14 @@
 """
 This bot writes transcribed voice messages from each user to the chat
 """
+
 import asyncio
 from aiortc.mediastreams import AudioStreamTrack
+
+from hubsclient.src.hubsclient.utils import Vector3, Rotation
+
+import time 
+import math
 
 from hubsbot import Bot
 from hubsbot.peer import Peer
@@ -28,6 +34,16 @@ class VoiceConsumer(VoskVoiceConsumer):
 
     async def on_message(self, msg: Message):
         await self.bot.hubs_client.send_chat(f'Transcribed from {self.peer.display_name}: {msg.body}')
+        difx = (self.bot.hubs_client.avatar.position[0] - self.peer.position[0]) / 400
+        dify = (self.bot.hubs_client.avatar.position[2] - self.peer.position[2]) / 400
+        while (self.bot.hubs_client.avatar.position[2] - self.peer.position[2]) ** 2 + (self.bot.hubs_client.avatar.position[0] - self.peer.position[0]) ** 2 > 0.5:
+            
+            self.bot.hubs_client.avatar.position[0] -= difx
+            self.bot.hubs_client.avatar.position[2] -= dify
+            await self.bot.hubs_client.sync()
+        
+        await self.bot.hubs_client.sync()
+        
 
 
 # Override consumer factory
@@ -36,7 +52,9 @@ class ConsumerFactory(BaseConsumerFactory):
         self.bot = bot
         pass
 
-    def create_text_consumer(self, peer: Peer):
+    async def create_text_consumer(self, peer: Peer):
+        # self.bot.hubs_client.avatar.position = Vector3( x=self.peer.position[0], y=self.peer.position[1], z=self.peer.position[2] )
+        await self.bot.hubs_client.sync()
         return TextConsumer(peer)
 
     def create_voice_consumer(self, peer: Peer, track: AudioStreamTrack):
@@ -46,9 +64,9 @@ class ConsumerFactory(BaseConsumerFactory):
 
 def main():
     bot = Bot(
-        host='HOST',
-        room_id='ROOM_ID',
-        avatar_id="basebot",
+        host='',
+        room_id='',
+        avatar_id="",
         display_name="Python User",
         consumer_factory=None,
         voice_track=AudioStreamTrack())
