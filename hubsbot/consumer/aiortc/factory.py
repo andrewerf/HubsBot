@@ -11,6 +11,7 @@ class RecorderFactory(ConsumerFactory):
     def __init__(self, output_path: Path):
         """
         This factory creates consumers writing each peer's speech to a separate .wav file and ignoring the text messages
+
         :param output_path: The path to save recorded speech.
         """
         self.output_path = output_path

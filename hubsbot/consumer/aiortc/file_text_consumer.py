@@ -5,7 +5,8 @@ from hubsbot.consumer import TextConsumer, Message
 class FileTextConsumer(TextConsumer):
     def __init__(self, path: Path):
         """
-        This consumer puts each message into a file, separating them by triple new line character ('\n\n\n').
+        This consumer puts each message into a file, separating them by triple new line character.
+
         :param path: The path of the file to write into
         """
         self.path = path

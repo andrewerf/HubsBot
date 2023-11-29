@@ -86,13 +86,13 @@ class Bot:
         Given a sharing url (Share button in the room) creates a new bot in this room
 
         :param link: The url (e.g. https://9de36d10e9.us2.myhubs.net/link/NUCedZ2)
-        :param avatar_id: check ``__init__``
-        :param display_name: check ``__init__``
-        :param consumer_factory: check ``__init__``
+        :param avatar_id: check :meth:`__init__`
+        :param display_name: check :meth:`__init__`
+        :param consumer_factory: check :meth:`__init__`
         :return: a newly created Bot
         """
         p = urlparse(url)
-        return Bot(p.netloc, p.path.split('/')[2], avatar_id, display_name, consumer_factory, voice_track)
+        return cls(p.netloc, p.path.split('/')[2], avatar_id, display_name, consumer_factory, voice_track)
 
     async def close(self):
         await self.hubs_client.close()
