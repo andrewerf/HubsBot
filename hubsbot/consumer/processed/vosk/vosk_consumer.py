@@ -9,7 +9,7 @@ from aioprocessing import AioProcess, AioPipe
 
 from vosk import Model, KaldiRecognizer
 
-from hubsbot.consumer import Message
+from hubsbot.consumer import Message, TextConsumer
 from hubsbot.consumer.processed.phrases_consumer import PhrasesVoiceConsumer
 
 
@@ -38,7 +38,7 @@ def vosk_server(conn, model: Model, framerate: int):
             conn.send(ret)
 
 
-class VoskVoiceConsumer(PhrasesVoiceConsumer):
+class VoskVoiceConsumer(PhrasesVoiceConsumer, TextConsumer):
     def __init__(self, track: MediaStreamTrack):
         super().__init__(track)
         self.model = Model(lang='ru')
