@@ -11,16 +11,16 @@ authors = [
 ]
 dependencies = [
     "Cryptography<=38.0.0",
-    "aioprocessing==2.0.1",
-    "av==8.1.0",
-    "gql==3.4.1",
-    "matplotlib==3.8.0",
-    "numpy==1.26.2",
-    "pydub==0.25.1",
-    "pymediasoup==0.2.5",
-    "Requests==2.31.0",
-    "transforms3d==0.4.1",
-    "websockets==11.0.3",
+    "aioprocessing",
+    "av",
+    "gql",
+    "matplotlib",
+    "numpy",
+    "pydub",
+    "pymediasoup",
+    "Requests",
+    "transforms3d",
+    "websockets",
     "openai==0.28.1"
 ]
 
