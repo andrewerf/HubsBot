@@ -20,7 +20,11 @@ author = 'Andrey Aralov'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.viewcode', 'sphinx.ext.autodoc', 'sphinx.ext.inheritance_diagram', 'sphinx.ext.graphviz']
+extensions = ['sphinx.ext.viewcode', 'sphinx.ext.autodoc', 'sphinx.ext.inheritance_diagram', 'sphinx.ext.graphviz', 'sphinxcontrib.apidoc']
+
+apidoc_module_dir = '../../'
+apidoc_output_dir = '.'
+apidoc_separate_modules = False
 
 templates_path = ['_templates']
 exclude_patterns = []

@@ -1,16 +1,29 @@
 [project]
 name = "HubsBot"
 description = "Mozilla Hubs client for AI-powered bots creation (support voice chatting)"
-requires-python = "==3.10"
-license = "AGPL-3.0-or-later"
+version = "0.0.0"
+requires-python = ">=3.10,<3.11"
+license = {text="AGPL-3.0"}
 keywords = ["mozilla-hubs"]
 authors = [
     { name = "Andrew Aralov", email = "andrew-aralov@yandex.ru" },
     { name = "Iskander Gafarov" }
 ]
 dependencies = [
+    "Cryptography<=38.0.0",
+    "aioprocessing",
+    "av",
+    "gql",
+    "matplotlib",
+    "numpy",
+    "pydub",
     "pymediasoup",
-    "Cryptography<=38.0.0"
+    "Requests",
+    "transforms3d",
+    "websockets",
+    "requests-toolbelt",
+    "vosk",
+    "openai==0.28.1"
 ]
 
 [options]
