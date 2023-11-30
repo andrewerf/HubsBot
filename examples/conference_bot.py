@@ -10,6 +10,7 @@ from aiortc.mediastreams import AudioStreamTrack
 from hubsbot import Bot
 from hubsbot.consumer import Message, TextConsumer as BaseTextConsumer
 from hubsbot.consumer.abstract.factory import ConsumerFactory as BaseConsumerFactory
+from hubsbot.consumer.processed.openai import GptConsumer
 from hubsbot.consumer.processed.vosk import VoskVoiceConsumer
 from hubsbot.hubsclient.utils import Rotation, Vector3
 from hubsbot.peer import Peer
@@ -68,7 +69,7 @@ class AnimatedBot(Bot):
             await animate_to_node(self, node)
 
     async def _animation_runner(self):
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
         while True:
             animation = await self.animations.get()
             await self._animate(animation)
@@ -120,20 +121,24 @@ class ConferenceBot(AnimatedBot):
 
 
 class VoiceConsumer(VoskVoiceConsumer):
-    def __init__(self, track: AudioStreamTrack, peer: Peer, bot: Bot):
+    def __init__(self, track: AudioStreamTrack, peer: Peer, bot: Bot, gpt: GptConsumer):
         super().__init__(track)
+        self.gpt = gpt
         self.peer = peer
         self.bot = bot
 
     async def on_message(self, msg: Message):
-        await self.bot.hubs_client.send_chat(f'Transcribed from {self.peer.display_name}: {msg.body}')
+        if len(msg.body) > 0:
+            await self.bot.hubs_client.send_chat(f'Transcribed from {self.peer.display_name}: {msg.body}')
+            await self.gpt.on_message(msg)
         await self.bot.hubs_client.sync()
 
 
 class TextConsumer(BaseTextConsumer):
-    def __init__(self, peer: Peer, bot: AnimatedBot):
+    def __init__(self, peer: Peer, bot: AnimatedBot, gpt: GptConsumer):
         self.bot = bot
         self.peer = peer
+        self.gpt = gpt
 
     async def on_message(self, msg: Message):
         print(f'Received msg: {msg}')
@@ -141,20 +146,24 @@ class TextConsumer(BaseTextConsumer):
             await self.bot.hubs_client.send_chat(str(self.bot.hubs_client.avatar.position))
         if msg.body == 'mypos':
             await self.bot.hubs_client.send_chat(str(self.peer.matrix[:3, -1]))
-        await self.bot.animations.put(Animation(nodes=[Animation.Node(pos=self.peer.matrix[:3, -1], r=1)]))
+        await self.gpt.on_message(msg)
         pass
 
 
 class ConsumerFactory(BaseConsumerFactory):
     def __init__(self, bot: AnimatedBot):
         self.bot = bot
-        pass
+        self.gpt_consumers = {}
 
     def create_text_consumer(self, peer: Peer):
-        return TextConsumer(peer, self.bot)
+        if peer.id not in self.gpt_consumers:
+            self.gpt_consumers[peer.id] = GptConsumer(peer, self.bot)
+        return TextConsumer(peer, self.bot, self.gpt_consumers[peer.id])
 
     def create_voice_consumer(self, peer: Peer, track: AudioStreamTrack):
-        recorder = VoiceConsumer(track, peer, self.bot)
+        if peer.id not in self.gpt_consumers:
+            self.gpt_consumers[peer.id] = GptConsumer(peer, self.bot)
+        recorder = VoiceConsumer(track, peer, self.bot, self.gpt_consumers[peer.id])
         return recorder
 
 
