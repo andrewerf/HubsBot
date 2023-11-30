@@ -21,6 +21,7 @@ dependencies = [
     "Requests",
     "transforms3d",
     "websockets",
+    "requests-toolbelt",
     "openai==0.28.1"
 ]
 
