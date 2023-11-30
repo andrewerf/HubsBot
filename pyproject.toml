@@ -20,7 +20,7 @@ dependencies = [
     "Requests==2.31.0",
     "transforms3d==0.4.1",
     "websockets==11.0.3",
-    "openai==0.28.1
+    "openai==0.28.1"
 ]
 
 [options]
