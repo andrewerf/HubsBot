@@ -1,6 +1,7 @@
 [project]
 name = "HubsBot"
 description = "Mozilla Hubs client for AI-powered bots creation (support voice chatting)"
+version = "0.0.0"
 requires-python = "==3.10"
 license = {text="AGPL-3.0"}
 keywords = ["mozilla-hubs"]
